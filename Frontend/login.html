@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Studio Gray Shades | Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-bg: #0f1011;
+            --card-bg: rgba(25, 27, 29, 0.7);
+            --neon-accent: #f8c146;
+            --text-main: #ffffff;
+            --text-muted: #a0a5aa;
+            --input-bg: rgba(255, 255, 255, 0.05);
+            --border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: radial-gradient(circle at 50% -20%, #2a2c31, var(--primary-bg));
+            color: var(--text-main);
+            overflow: hidden;
+        }
+
+        .glow {
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(248, 193, 70, 0.15) 0%, transparent 60%);
+            border-radius: 50%;
+            top: -100px;
+            left: -100px;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .glow-2 {
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.05) 0%, transparent 60%);
+            border-radius: 50%;
+            bottom: -200px;
+            right: -100px;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .login-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            padding: 3rem;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+            z-index: 10;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .login-header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(to right, #fff, #f8c146);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .login-header p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.9rem 1rem;
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-main);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        .form-control:focus {
+            border-color: var(--neon-accent);
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 0 4px rgba(248, 193, 70, 0.1);
+        }
+
+        .form-control.input-invalid {
+            border-color: #ff6b6b;
+            box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.15);
+        }
+
+        .field-error {
+            display: none;
+            color: #ff6b6b;
+            font-size: 0.8rem;
+            margin-top: 0.45rem;
+            line-height: 1.35;
+        }
+
+        .field-error.visible {
+            display: block;
+        }
+
+        .form-error-banner {
+            display: none;
+            color: #ff8a8a;
+            background: rgba(255, 107, 107, 0.12);
+            border: 1px solid rgba(255, 107, 107, 0.35);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            font-size: 0.85rem;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .form-error-banner.visible {
+            display: block;
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 1rem;
+            background: var(--neon-accent);
+            color: #111;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s, background 0.3s;
+            margin-top: 1rem;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(248, 193, 70, 0.3);
+            background: #ffcc5c;
+        }
+
+    </style>
+</head>
+
+<body>
+    <div class="glow"></div>
+    <div class="glow-2"></div>
+
+    <div class="login-card">
+        <div class="login-header">
+            <h1>Studio Gray Shades</h1>
+            <p>Access your POS Dashboard</p>
+        </div>
+        <form id="login-form" novalidate>
+            <p id="form-error-banner" class="form-error-banner" role="alert"></p>
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="text" id="email" class="form-control" placeholder="admin@yourstudio.com" autocomplete="username" inputmode="email">
+                <p id="email-error" class="field-error" role="alert"></p>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" class="form-control" placeholder="Enter password" autocomplete="current-password">
+                <p id="password-error" class="field-error" role="alert"></p>
+            </div>
+            <button type="submit" class="btn-login">Sign In</button>
+        </form>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <script src="auth.js"></script>
+    <script>
+        if (Auth.isAuthenticated()) {
+            window.location.href = 'index.html';
+        }
+
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const emailError = document.getElementById('email-error');
+        const passwordError = document.getElementById('password-error');
+        const formBanner = document.getElementById('form-error-banner');
+
+        function clearLoginErrors() {
+            emailError.textContent = '';
+            passwordError.textContent = '';
+            emailError.classList.remove('visible');
+            passwordError.classList.remove('visible');
+            formBanner.classList.remove('visible');
+            formBanner.textContent = '';
+            emailInput.classList.remove('input-invalid');
+            passwordInput.classList.remove('input-invalid');
+        }
+
+        function showFieldError(inputEl, errorEl, message) {
+            errorEl.textContent = message;
+            errorEl.classList.add('visible');
+            inputEl.classList.add('input-invalid');
+        }
+
+        function isValidEmail(value) {
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+        }
+
+        function validateLoginForm(email, password) {
+            clearLoginErrors();
+            let valid = true;
+
+            if (!email) {
+                showFieldError(emailInput, emailError, 'Email is required.');
+                valid = false;
+            } else if (!isValidEmail(email)) {
+                showFieldError(emailInput, emailError, 'Enter a valid email address.');
+                valid = false;
+            }
+
+            if (!password) {
+                showFieldError(passwordInput, passwordError, 'Password is required.');
+                valid = false;
+            } else if (password.length < 6) {
+                showFieldError(passwordInput, passwordError, 'Password must be at least 6 characters.');
+                valid = false;
+            }
+
+            return valid;
+        }
+
+        [emailInput, passwordInput].forEach(input => {
+            input.addEventListener('input', () => {
+                if (input.classList.contains('input-invalid')) {
+                    clearLoginErrors();
+                }
+            });
+        });
+
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const email = emailInput.value.trim();
+            const password = passwordInput.value;
+
+            if (!validateLoginForm(email, password)) {
+                return;
+            }
+
+            const btn = document.querySelector('.btn-login');
+            const originalText = btn.innerText;
+            btn.innerText = 'Authenticating...';
+            btn.disabled = true;
+
+            try {
+                const supabase = Auth.getSupabaseClient();
+                const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+                if (error || !data.session) {
+                    const message = error?.message || 'Invalid email or password.';
+                    formBanner.textContent = message;
+                    formBanner.classList.add('visible');
+                    showFieldError(emailInput, emailError, 'Check your email address.');
+                    showFieldError(passwordInput, passwordError, 'Check your password.');
+                    return;
+                }
+
+                Auth.saveSession(data.session);
+                window.location.href = 'index.html';
+            } catch (err) {
+                console.error('Login error:', err);
+                formBanner.textContent = err.message || 'Unable to sign in. Check config.js and Supabase settings.';
+                formBanner.classList.add('visible');
+            } finally {
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+
+</html>

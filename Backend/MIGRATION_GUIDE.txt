@@ -1,0 +1,24 @@
+# Portability & Migration Guide
+
+When you want to move your Studio GrayShades POS project to a different Windows PC, follow these exact steps to ensure a smooth transition without "ENOENT" path errors.
+
+## On the OLD PC (Before Copying):
+1. Stop and remove the background service so it safely unhooks from Windows:
+   - Open Command Prompt or PowerShell as ADMINISTRATOR in your `Backend` folder.
+   - Run: `node uninstall-service.js`
+2. Wait for it to say "Uninstall complete."
+3. Delete the following folders from the `Backend` directory:
+   - `node_modules` (This contains old path bindings specific to the old PC)
+   - `daemon` (This contains the old Windows service executables)
+4. Now, copy your entire `Studio GrayShades` folder to your USB drive or cloud storage.
+
+## On the NEW PC (After Copying):
+1. Paste the `Studio GrayShades` folder wherever you want it to live permanently on the new PC.
+2. Open Command Prompt or PowerShell as ADMINISTRATOR and navigate to your `Backend` folder.
+   - Example: `cd C:\path\to\Studio GrayShades\Backend`
+3. Install your Node packages fresh so they bind to the new PC correctly:
+   - Run: `npm install`
+4. Install and start the background service using the portable script:
+   - Run: `node install-service.js`
+
+That's it! Your backend will now run automatically in the background on the new PC using dynamically resolved paths.

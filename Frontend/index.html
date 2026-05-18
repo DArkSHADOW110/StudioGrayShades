@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Studio Gray Shades | POS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <script src="auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuth();
+            initNavigation();
+        });
+
+        function initNavigation() {
+            const nav = document.querySelector('.nav-links');
+            if (!nav) return;
+            nav.addEventListener('click', (e) => {
+                const item = e.target.closest('li[data-section]');
+                if (!item) return;
+                showSection(item.dataset.section, item);
+            });
+        }
+
+        function toggleSidebar() {
+            document.body.classList.toggle('sidebar-open');
+        }
+
+        function closeSidebar() {
+            document.body.classList.remove('sidebar-open');
+        }
+
+        function checkAuth() {
+            const isLoggedIn = typeof Auth !== 'undefined' && Auth.isAuthenticated();
+            const adminBtn = document.querySelector('.user-profile');
+            const sidebarLogoutBtn = document.getElementById('sidebar-logout-btn');
+
+            if (isLoggedIn) {
+                if (adminBtn) {
+                    adminBtn.innerText = 'Admin ✓';
+                    adminBtn.style.cursor = 'default';
+                    adminBtn.onclick = null;
+                }
+                if (sidebarLogoutBtn) sidebarLogoutBtn.style.display = 'block';
+
+                // Unlock forms
+                document.querySelectorAll('input, select, textarea, button[type="submit"], .btn-outline').forEach(el => {
+                    el.disabled = false;
+                    el.style.opacity = '1';
+                    el.style.cursor = el.tagName === 'BUTTON' || el.tagName === 'SELECT' ? 'pointer' : 'text';
+                });
+            } else {
+                if (adminBtn) {
+                    adminBtn.innerHTML = 'Login <span>(Admin)</span>';
+                    adminBtn.style.cursor = 'pointer';
+                    adminBtn.onclick = () => window.location.href = 'login.html';
+                }
+                if (sidebarLogoutBtn) sidebarLogoutBtn.style.display = 'none';
+
+                // Lock forms to prevent changing things
+                document.querySelectorAll('input, select, textarea, button[type="submit"], .btn-outline').forEach(el => {
+                    el.disabled = true;
+                    el.style.opacity = '0.6';
+                    el.style.cursor = 'not-allowed';
+                });
+            }
+        }
+
+        async function logout() {
+            if (typeof Auth !== 'undefined') {
+                await Auth.signOut();
+            } else {
+                localStorage.removeItem('isLoggedIn');
+                localStorage.removeItem('supabase_session');
+            }
+            window.location.href = 'login.html';
+        }
+    </script>
+</head>
+
+<body>
+    <div class="app-container">
+        <div id="sidebar-backdrop" class="sidebar-backdrop" onclick="closeSidebar()" aria-hidden="true"></div>
+
+        <nav class="sidebar" id="sidebar" aria-label="Main navigation">
+            <div class="sidebar-header">
+                <h2 class="logo">Studio Gray Shades</h2>
+                <button type="button" class="sidebar-close-btn" onclick="closeSidebar()" aria-label="Close menu">&times;</button>
+            </div>
+            <ul class="nav-links">
+                <li data-section="dashboard" class="active">Dashboard</li>
+                <li data-section="framing">Printings</li>
+                <li data-section="shoots">Photography</li>
+                <li data-section="booking">Booking</li>
+                <li data-section="editing">Editing</li>
+                <li data-section="unsettled-orders">Unsettled Orders</li>
+                <li data-section="expenditure">Expenditure</li>
+                <li data-section="all-orders">All Orders</li>
+                <li data-section="order-status">Order Status 📊</li>
+                <li data-section="notes">Notes 📝</li>
+                <li data-section="settings">Settings ⚙️</li>
+            </ul>
+            <div id="sidebar-logout-btn" class="sidebar-footer" style="display: none;">
+                <button type="button" class="btn-logout" onclick="logout()">Logout</button>
+            </div>
+        </nav>
+
+        <main class="main-content">
+            <button type="button" class="mobile-menu-btn" onclick="toggleSidebar()" aria-label="Open menu">
+                <span class="mobile-menu-icon" aria-hidden="true"></span>
+                <span>Menu</span>
+            </button>
+
+            <section id="dashboard" class="page-section active-section">
+                <header>
+                    <div class="header-left">
+                        <h1>Dashboard</h1>
+                        <p class="subtitle" style="color: var(--text-muted); font-size: 0.95rem; margin-top: 5px;">
+                            Welcome to GrayShades</p>
+                    </div>
+                    <div class="user-profile">Admin</div>
+                </header>
+
+                <div class="stats-grid">
+                    <div class="stat-card modern-card">
+                        <div class="icon-wrapper"
+                            style="background: rgba(108, 92, 231, 0.1); color: var(--primary-color);">
+                            💸
+                        </div>
+                        <div class="stat-info">
+                            <h3>Today Sales</h3>
+                            <h2 id="today-sales">LKR 0</h2>
+                        </div>
+                    </div>
+                    <div class="stat-card modern-card">
+                        <div class="icon-wrapper" style="background: rgba(253, 203, 110, 0.1); color: var(--warning);">
+                            ⏳
+                        </div>
+                        <div class="stat-info">
+                            <h3>Pending Payments</h3>
+                            <h2 id="pending-payments">LKR 0</h2>
+                        </div>
+                    </div>
+                    <div class="stat-card modern-card">
+                        <div class="icon-wrapper" style="background: rgba(0, 184, 148, 0.1); color: var(--success);">
+                            📦
+                        </div>
+                        <div class="stat-info">
+                            <h3>New Orders</h3>
+                            <h2 id="new-orders">0</h2>
+                        </div>
+                    </div>
+                    <div class="stat-card modern-card">
+                        <div class="icon-wrapper" style="background: rgba(225, 112, 85, 0.1); color: #e17055;">
+                            🚚
+                        </div>
+                        <div class="stat-info">
+                            <h3>All Orders</h3>
+                            <h2 id="ready-orders">0</h2>
+                        </div>
+                    </div>
+                    <div class="stat-card modern-card">
+                        <div class="icon-wrapper" style="background: rgba(255, 71, 87, 0.1); color: #ff4757;">
+                            📉
+                        </div>
+                        <div class="stat-info">
+                            <h3>Total Expenditures</h3>
+                            <h2 id="total-expenditures">LKR 0</h2>
+                        </div>
+                    </div>
+                    <div class="stat-card modern-card">
+                        <div class="icon-wrapper" style="background: rgba(0, 184, 148, 0.1); color: #00b894;">
+                            💰
+                        </div>
+                        <div class="stat-info">
+                            <h3>Net Revenue</h3>
+                            <h2 id="net-revenue">LKR 0</h2>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chart-container modern-card">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h3 style="color: var(--sidebar-bg); font-size: 1.1rem; margin: 0;">Revenue Overview</h3>
+                        <div class="chart-filters">
+                            <button class="filter-pill" onclick="fetchChartData(7, this)">7 Days</button>
+                            <button class="filter-pill" onclick="fetchChartData(30, this)">1 Month</button>
+                            <button class="filter-pill" onclick="fetchChartData(90, this)">3 Months</button>
+                            <button class="filter-pill active" onclick="fetchChartData(180, this)">6 Months</button>
+                            <button class="filter-pill" onclick="fetchChartData(365, this)">1 Year</button>
+                        </div>
+                    </div>
+                    <div style="position: relative; height: 300px;">
+                        <canvas id="incomeChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Upcoming Bookings Widget -->
+                <div class="table-container" style="margin-top: 30px; border-top: 4px solid var(--primary-color);">
+                    <h3 style="font-family: 'Outfit', sans-serif;">📅 Upcoming Bookings Reminder</h3>
+                    <table style="font-family: 'Outfit', sans-serif;">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Customer Name</th>
+                                <th>Event Title</th>
+                                <th>Phone Number</th>
+                            </tr>
+                        </thead>
+                        <tbody id="upcoming-bookings-table">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="framing" class="page-section">
+                <header>
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <div
+                            style="background: var(--primary-color); color: white; padding: 15px; border-radius: 12px; font-size: 1.5rem; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(108, 92, 231, 0.3);">
+                            🖼️
+                        </div>
+                        <div>
+                            <h1 style="margin: 0; font-size: 1.8rem; color: #1e1e2d;">Printings Orders</h1>
+                            <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 5px;">Manage all
+                                framing, printing and photo orders </p>
+                        </div>
+                    </div>
+                </header>
+
+                <div class="form-container" style="border-top: 4px solid var(--primary-color);">
+                    <h3 id="framing-form-title"><span style="margin-right: 8px;">➕</span> Add New Printing Order</h3>
+                    <form id="framing-form">
+                        <input type="hidden" id="f-edit-id">
+                        <div class="input-group"><label>👤 Customer Name</label><input type="text" id="f-name"
+                                placeholder="Enter Full Name" required></div>
+                        <div class="input-group"><label>📞 Phone</label><input type="text" id="f-phone"
+                                placeholder="07XXXXXXXX" required></div>
+                        <div class="input-group"><label>📝 Description</label><input type="text" id="f-desc"
+                                placeholder="Details (e.g. 8x12 Black Frame x2...)" required></div>
+                        <div class="input-group"><label>📅 Date</label><input type="date" id="f-date" required>
+                        </div>
+                        <div style="grid-column: span 2;">
+                            <div id="framing-tasks-container">
+                                <!-- Dynamic rows go here -->
+                            </div>
+                            <button type="button" id="add-framing-task-btn" class="btn btn-outline btn-small"
+                                style="margin-top: 10px;" onclick="addFramingTaskRow()">➕ Add New Service</button>
+                        </div>
+                        <div class="input-group"><label>💰 Total Price (LKR)</label><input type="number" id="f-price"
+                                readonly style="background-color: #eaeaef; cursor: not-allowed; font-weight: bold;">
+                        </div>
+                        <div class="input-group"><label>💵 Advance Paid (LKR)</label><input type="number" id="f-advance"
+                                required oninput="calculateFramingRemaining()"></div>
+                        <div class="input-group"><label>🧾 Remaining Balance (LKR)</label><input type="number"
+                                id="f-remaining" readonly
+                                style="background-color: #eaeaef; cursor: not-allowed; font-weight: bold;"></div>
+                        <div class="input-group" style="grid-column: span 1;"><label>📝 Notes</label><textarea
+                                id="f-notes" placeholder="Any special requirements..."
+                                style="min-height: 50px;"></textarea></div>
+                        <div style="grid-column: span 2; display: flex; justify-content: flex-end; margin-top: 10px;">
+                            <button type="submit" class="btn"
+                                style="padding: 12px 30px; font-size: 1.1rem; border-radius: 8px;">Save Order</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="table-container" style="margin-top: 30px;">
+                    <h3>Framing Orders History</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Customer</th>
+                                <th>Description</th>
+                                <th>Delivery Date</th>
+                                <th>Total</th>
+                                <th>Balance</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="framing-orders-table">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="shoots" class="page-section">
+                <header>
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <div
+                            style="background: var(--primary-color); color: white; padding: 15px; border-radius: 12px; font-size: 1.5rem; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(108, 92, 231, 0.3);">
+                            📸
+                        </div>
+                        <div>
+                            <h1 style="margin: 0; font-size: 1.8rem; color: #1e1e2d;">Photography</h1>
+                            <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 5px;">Manage all
+                                photography bookings</p>
+                        </div>
+                    </div>
+                </header>
+
+                <div class="form-container" style="border-top: 4px solid var(--primary-color);">
+                    <h3 id="shoot-form-title"><span style="margin-right: 8px;">➕</span> Add New Photography Order</h3>
+                    <form id="shoot-form">
+                        <input type="hidden" id="ps-edit-id">
+                        <div class="input-group"><label>👤 Customer Name</label><input type="text" id="ps-name"
+                                placeholder="Enter Full Name" required></div>
+                        <div class="input-group"><label>📞 Phone</label><input type="text" id="ps-phone"
+                                placeholder="07XXXXXXXX" required></div>
+                        <div class="input-group"><label>🎉 Event Title</label><input type="text" id="ps-event"
+                                placeholder="e.g. Kasun &amp; Nimali Wedding" required></div>
+                        <div class="input-group"><label>📅 Date</label><input type="date" id="ps-date" required></div>
+                        <div class="input-group"><label>⏰ Time</label><input type="text" id="ps-time"
+                                placeholder="e.g. 10:00 AM - 2:00 PM"></div>
+                        <div class="input-group"><label>📍 Location</label><input type="text" id="ps-location"
+                                placeholder="e.g. Studio, Outdoor" required></div>
+
+
+
+                        <div style="grid-column: span 2;">
+                            <div id="additional-services-container">
+                                <!-- Dynamic rows go here -->
+                            </div>
+                            <button type="button" id="add-service-btn" class="btn btn-outline btn-small"
+                                style="margin-top: 10px;" onclick="addServiceRow()">➕ Add Additional Service</button>
+                        </div>
+
+                        <div class="input-group"><label>💰 Total Price (LKR)</label><input type="number" id="ps-total"
+                                readonly style="background-color: #eaeaef; cursor: not-allowed; font-weight: bold;">
+                        </div>
+                        <div class="input-group"><label>💵 Advance Paid (LKR)</label><input type="number"
+                                id="ps-advance" oninput="calculateRemaining()" required></div>
+                        <div class="input-group"><label>🧾 Remaining Balance (LKR)</label><input type="number"
+                                id="ps-remaining" readonly
+                                style="background-color: #eaeaef; cursor: not-allowed; font-weight: bold;"></div>
+
+                        <div class="input-group" style="grid-column: span 2;"><label>📝 Note 1</label><textarea
+                                id="ps-note1" placeholder="Primary notes / special requirements..."
+                                style="min-height: 50px;"></textarea></div>
+                        <div class="input-group" style="grid-column: span 2;"><label>📋 Note 2</label><textarea
+                                id="ps-note2" placeholder="Extra information, additional details..."
+                                style="min-height: 50px;"></textarea></div>
+                        <div style="grid-column: span 2; display: flex; justify-content: flex-end; margin-top: 10px;">
+                            <button type="submit" class="btn"
+                                style="padding: 12px 30px; font-size: 1.1rem; border-radius: 8px;">Save</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="table-container" style="margin-top: 30px;">
+                    <h3>Photo Shoot Booking History</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Booking ID</th>
+                                <th>Customer</th>
+                                <th>Event Title</th>
+                                <th>Date</th>
+                                <th>Total</th>
+                                <th>Balance</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="shoots-table">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="booking" class="page-section" style="font-family: 'Outfit', sans-serif;">
+                <header>
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <div style="background: var(--primary-color); color: white; padding: 15px; border-radius: 12px; font-size: 1.5rem; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(108, 92, 231, 0.3);">
+                            📅
+                        </div>
+                        <div>
+                            <h1 style="margin: 0; font-size: 1.8rem; color: #1e1e2d; font-family: 'Outfit', sans-serif;">Booking</h1>
+                            <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 5px;">Manage standalone local bookings</p>
+                        </div>
+                    </div>
+                </header>
+
+                <div class="form-container" style="border-top: 4px solid var(--primary-color);">
+                    <h3 id="booking-form-title" style="font-family: 'Outfit', sans-serif;"><span style="margin-right: 8px;">➕</span> Add New Booking</h3>
+                    <form id="booking-form" style="font-family: 'Outfit', sans-serif;">
+                        <input type="hidden" id="bk-edit-id">
+                        <div class="input-group"><label style="font-family: 'Outfit', sans-serif;">👤 Customer Name</label><input type="text" id="bk-name" placeholder="Enter Full Name" required style="font-family: 'Outfit', sans-serif;"></div>
+                        <div class="input-group"><label style="font-family: 'Outfit', sans-serif;">📞 Phone</label><input type="tel" id="bk-phone" placeholder="07XXXXXXXX" required style="font-family: 'Outfit', sans-serif;"></div>
+                        <div class="input-group"><label style="font-family: 'Outfit', sans-serif;">🎉 Event Title</label><input type="text" id="bk-event" placeholder="e.g. Kasun &amp; Nimali Wedding" required style="font-family: 'Outfit', sans-serif;"></div>
+                        <div class="input-group"><label style="font-family: 'Outfit', sans-serif;">📅 Date</label><input type="date" id="bk-date" required style="font-family: 'Outfit', sans-serif;"></div>
+                        
+                        <div style="grid-column: span 2;">
+                            <label style="font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 0.9rem; color: #4a4a5a; margin-bottom: 8px; display: block;">🛠️ Additional Services</label>
+                            <div id="booking-services-container">
+                                <!-- Dynamic rows go here -->
+                            </div>
+                            <button type="button" id="add-booking-service-btn" class="btn btn-outline btn-small" style="margin-top: 10px; font-family: 'Outfit', sans-serif;" onclick="addBookingServiceRow()">➕ Add Additional Service</button>
+                        </div>
+
+                        <div style="grid-column: span 2; display: flex; justify-content: flex-end; margin-top: 10px;">
+                            <button type="submit" class="btn" style="padding: 12px 30px; font-size: 1.1rem; border-radius: 8px; font-family: 'Outfit', sans-serif;">Save Booking</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="table-container" style="margin-top: 30px;">
+                    <h3 style="font-family: 'Outfit', sans-serif;">Local Booking History</h3>
+                    <table style="font-family: 'Outfit', sans-serif;">
+                        <thead>
+                            <tr>
+                                <th style="font-family: 'Outfit', sans-serif;">Booking ID</th>
+                                <th style="font-family: 'Outfit', sans-serif;">Customer</th>
+                                <th style="font-family: 'Outfit', sans-serif;">Event Title</th>
+                                <th style="font-family: 'Outfit', sans-serif;">Date</th>
+                                <th style="font-family: 'Outfit', sans-serif;">Total Price</th>
+                                <th style="font-family: 'Outfit', sans-serif;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bookings-table">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="editing" class="page-section">
+                <header>
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <div
+                            style="background: var(--primary-color); color: white; padding: 15px; border-radius: 12px; font-size: 1.5rem; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(108, 92, 231, 0.3);">
+                            🎨
+                        </div>
+                        <div>
+                            <h1 style="margin: 0; font-size: 1.8rem; color: #1e1e2d;">Photo Editing</h1>
+                            <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 5px;">Manage all photo
+                                editing orders</p>
+                        </div>
+                    </div>
+                </header>
+
+                <div class="form-container" style="border-top: 4px solid var(--primary-color);">
+                    <h3 id="editing-form-title"><span style="margin-right: 8px;">➕</span> Add New Editing Order</h3>
+                    <form id="editing-form">
+                        <input type="hidden" id="e-edit-id">
+                        <div class="input-group"><label>👤 Customer Name</label><input type="text" id="e-name"
+                                placeholder="Enter Full Name" required></div>
+                        <div class="input-group"><label>📞 Phone</label><input type="text" id="e-phone"
+                                placeholder="07XXXXXXXX" required></div>
+                        <div class="input-group"><label>📝 Title</label><input type="text" id="e-title"
+                                placeholder="e.g. Wedding Album Retouch" required></div>
+                        <div class="input-group"><label>📅 Delivery Date</label><input type="date" id="e-date" required>
+                        </div>
+                        <div style="grid-column: span 2;">
+                            <div id="editing-tasks-container">
+                                <!-- Dynamic rows go here -->
+                            </div>
+                            <button type="button" id="add-editing-task-btn" class="btn btn-outline btn-small"
+                                style="margin-top: 10px;" onclick="addEditingTaskRow()">➕ Add New Task</button>
+                        </div>
+                        <div class="input-group"><label>💰 Total Price (LKR)</label><input type="number" id="e-price"
+                                readonly style="background-color: #eaeaef; cursor: not-allowed; font-weight: bold;">
+                        </div>
+                        <div class="input-group"><label>💵 Advance Paid (LKR)</label><input type="number" id="e-advance"
+                                oninput="calculateEditingRemaining()" required></div>
+                        <div class="input-group"><label>🧾 Remaining Balance (LKR)</label><input type="number"
+                                id="e-remaining" readonly
+                                style="background-color: #eaeaef; cursor: not-allowed; font-weight: bold;"></div>
+                        <div class="input-group"><label>🚦 Status</label>
+                            <select id="e-status" disabled
+                                style="background-color: #eaeaef; cursor: not-allowed; font-weight: bold; color: var(--text-color); opacity: 1;">
+                                <option value="Pending">Pending</option>
+                                <option value="Completed">Completed</option>
+                            </select>
+                        </div>
+                        <div class="input-group" style="grid-column: span 2;"><label>📝 Note 1</label><textarea
+                                id="e-note1" placeholder="Primary notes / special requirements..."
+                                style="min-height: 50px;"></textarea></div>
+                        <div class="input-group" style="grid-column: span 2;"><label>📋 Note 2</label><textarea
+                                id="e-note2" placeholder="Extra information, additional details..."
+                                style="min-height: 50px;"></textarea></div>
+                        <div style="grid-column: span 2; display: flex; justify-content: flex-end; margin-top: 10px;">
+                            <button type="submit" class="btn"
+                                style="padding: 12px 30px; font-size: 1.1rem; border-radius: 8px;">Save Order</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="table-container" style="margin-top: 30px;">
+                    <h3>Editing Orders History</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Customer</th>
+                                <th>Title</th>
+                                <th>Delivery Date</th>
+                                <th>Total</th>
+                                <th>Balance</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="editing-orders-table">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+
+            <section id="expenditure" class="page-section">
+                <header>
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <div
+                            style="background: var(--primary-color); color: white; padding: 15px; border-radius: 12px; font-size: 1.5rem; display:flex; align-items:center; justify-content:center; box-shadow: 0 4px 10px rgba(108,92,231,0.3);">
+                            💳
+                        </div>
+                        <div>
+                            <h1 style="margin:0; font-size:1.8rem; color:#1e1e2d;">Expenditure</h1>
+                            <p style="color:var(--text-muted); font-size:0.95rem; margin-top:5px;">Track and manage
+                                business expenses</p>
+                        </div>
+                    </div>
+                </header>
+
+                <div class="form-container" style="border-top: 4px solid var(--primary-color);">
+                    <h3 id="expense-form-title"><span style="margin-right: 8px;">➕</span> Add New Expense</h3>
+                    <form id="expense-form">
+                        <input type="hidden" id="exp-edit-id">
+                        <div class="input-group">
+                            <label>📅 Date</label>
+                            <input type="date" id="exp-date" required>
+                        </div>
+                        <div class="input-group">
+                            <label>🧾 Title / Description</label>
+                            <input type="text" id="exp-title" placeholder="e.g. Electricity Bill, Rent, Materials"
+                                required>
+                        </div>
+                        <div class="input-group" style="grid-column: span 2;">
+                            <label>📝 Note</label>
+                            <textarea id="exp-note" placeholder="Optional note..." style="min-height: 60px;"></textarea>
+                        </div>
+                        <div class="input-group">
+                            <label>💸 Price (LKR)</label>
+                            <input type="number" id="exp-price" min="0" step="0.01" placeholder="0.00" required>
+                        </div>
+                        <div style="grid-column: span 2; display: flex; justify-content: flex-end; margin-top: 10px;">
+                            <button type="submit" class="btn"
+                                style="padding: 12px 30px; font-size: 1.1rem; border-radius: 8px;">Save Expense</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="table-container" style="margin-top: 30px;">
+                    <h3>Expenses History</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Title</th>
+                                <th>Note</th>
+                                <th>Price</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="expense-history-table">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="unsettled-orders" class="page-section">
+                <header>
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <div style="background: var(--primary-color); color: white; padding: 15px; border-radius: 12px; font-size: 1.5rem; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(108, 92, 231, 0.3);">
+                            ⚠️
+                        </div>
+                        <div>
+                            <h1 style="margin: 0; font-size: 1.8rem; color: #1e1e2d;">Unsettled Orders</h1>
+                            <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 5px;">Manage completely isolated unsettled orders</p>
+                        </div>
+                    </div>
+                </header>
+
+                <div class="form-container" style="border-top: 4px solid var(--primary-color);">
+                    <h3 id="unsettled-form-title"><span style="margin-right: 8px;">➕</span> Add New Unsettled Order</h3>
+                    <form id="unsettled-form">
+                        <input type="hidden" id="uo-edit-id">
+                        <div class="input-group"><label>👤 Customer Name</label><input type="text" id="uo-name" placeholder="Enter Full Name" required></div>
+                        <div class="input-group"><label>📅 Date</label><input type="date" id="uo-date" required></div>
+                        <div class="input-group"><label>📞 Phone Number</label><input type="tel" id="uo-phone" placeholder="07XXXXXXXX" required></div>
+                        <div class="input-group"><label>📝 Title</label><input type="text" id="uo-title" placeholder="e.g. Unsettled Payment" required></div>
+                        
+                        <div style="grid-column: span 2;">
+                            <label style="font-weight: 600; font-size: 0.9rem; color: #4a4a5a; margin-bottom: 8px; display: block;">🛠️ Add New Service / Item</label>
+                            <div id="uo-services-container">
+                                <!-- Dynamic rows go here -->
+                            </div>
+                            <button type="button" id="add-uo-service-btn" class="btn btn-outline btn-small" style="margin-top: 10px;" onclick="addUoServiceRow()">➕ Add Item</button>
+                        </div>
+
+                        <div class="input-group"><label>💵 Advance Paid (LKR)</label><input type="number" id="uo-advance" oninput="calculateUoRemaining()" required></div>
+                        <div class="input-group"><label>🧾 Balance (LKR)</label><input type="number" id="uo-balance" readonly style="background-color: #eaeaef; cursor: not-allowed; font-weight: bold;"></div>
+
+                        <div style="grid-column: span 2; display: flex; justify-content: flex-end; margin-top: 10px;">
+                            <button type="submit" class="btn" style="padding: 12px 30px; font-size: 1.1rem; border-radius: 8px;">Save Unsettled Order</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="table-container" style="margin-top: 30px;">
+                    <h3>Unsettled Orders History</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Customer Name</th>
+                                <th>Title</th>
+                                <th>Date</th>
+                                <th>Total Price</th>
+                                <th>Advance</th>
+                                <th>Balance</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="unsettled-orders-table">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="all-orders" class="page-section">
+                <header>
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <div
+                            style="background: var(--primary-color); color: white; padding: 15px; border-radius: 12px; font-size: 1.5rem; display:flex; align-items:center; justify-content:center; box-shadow: 0 4px 10px rgba(108,92,231,0.3);">
+                            📂</div>
+                        <div>
+                            <h1 style="margin:0; font-size:1.8rem; color:#1e1e2d;">All Orders</h1>
+                            <p style="color:var(--text-muted); font-size:0.95rem; margin-top:5px;">Filter and manage all
+                                the orders</p>
+                        </div>
+                    </div>
+                </header>
+
+                <!-- Filter Groups -->
+                <div style="display:flex; flex-direction:column; gap:12px; margin-bottom:24px;">
+
+                    <!-- Row 1: Type + Color -->
+                    <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                        <span
+                            style="font-size:0.8rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; margin-right:4px;">Type</span>
+                        <button class="btn btn-outline filter-btn active" onclick="loadAllOrders('all')"
+                            id="filter-all">All</button>
+                        <button class="btn btn-outline filter-btn" onclick="loadAllOrders('type-framing')"
+                            id="filter-type-framing" style="border-color:#00b894; color:#00b894;">🖼️ Framing</button>
+                        <button class="btn btn-outline filter-btn" onclick="loadAllOrders('type-shoot')"
+                            id="filter-type-shoot"
+                            style="border-color:var(--primary-color); color:var(--primary-color);">📸 Shoots</button>
+                        <button class="btn btn-outline filter-btn" onclick="loadAllOrders('type-editing')"
+                            id="filter-type-editing" style="border-color:#e17055; color:#e17055;">🎨 Editing</button>
+
+                        <span style="width:1px; height:28px; background:var(--border-color); margin:0 6px;"></span>
+
+                        <span
+                            style="font-size:0.8rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; margin-right:4px;">Label</span>
+                        <button class="btn btn-outline filter-btn" onclick="loadAllOrders('red')" id="filter-red"
+                            style="border-color:#ff4757; color:#ff4757;">🔴 <span id="filter-red-count"></span></button>
+                        <button class="btn btn-outline filter-btn" onclick="loadAllOrders('yellow')" id="filter-yellow"
+                            style="border-color:#ffa502; color:#ffa502;">🟡 <span
+                                id="filter-yellow-count"></span></button>
+                        <button class="btn btn-outline filter-btn" onclick="loadAllOrders('green')" id="filter-green"
+                            style="border-color:#2ed573; color:#2ed573;">🟢 <span
+                                id="filter-green-count"></span></button>
+                    </div>
+
+                    <!-- Row 2: Status -->
+                    <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                        <span
+                            style="font-size:0.8rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; margin-right:4px;">Status</span>
+                        <button class="btn btn-outline filter-btn" onclick="loadAllOrders('status-completed')"
+                            id="filter-status-completed" style="border-color:#50cd89; color:#50cd89;">✅
+                            Completed</button>
+                        <button class="btn btn-outline filter-btn" onclick="loadAllOrders('status-pending')"
+                            id="filter-status-pending" style="border-color:#f1416c; color:#f1416c;">⏳ Pending /
+                            Booked</button>
+                    </div>
+
+                </div>
+
+                <!-- Advanced Search & Date Filter -->
+                <div style="display:flex; gap:15px; margin-bottom:24px; align-items:center; background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); flex-wrap: wrap;">
+                    <div class="input-group" style="flex: 1; min-width: 250px; margin: 0;">
+                        <label style="font-size:0.8rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">🔍 Search</label>
+                        <input type="text" id="all-orders-search" placeholder="Search by Name, Phone, Title, Price..." oninput="applyAllOrdersFilters()" style="margin: 0; padding: 10px; border-radius: 6px; border: 1px solid #ccc; width: 100%;">
+                    </div>
+                    <div class="input-group" style="width: 200px; margin: 0;">
+                        <label style="font-size:0.8rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">📅 Filter by Month</label>
+                        <input type="month" id="all-orders-date-filter" oninput="applyAllOrdersFilters()" style="margin: 0; padding: 10px; border-radius: 6px; border: 1px solid #ccc; width: 100%;">
+                    </div>
+                    <button class="btn btn-outline" onclick="clearAllOrdersFilters()" style="margin-top: 22px; white-space: nowrap;">Clear Filters</button>
+                </div>
+
+                <div class="table-container">
+                    <h3 id="all-orders-title">All Orders</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Customer</th>
+                                <th>Description</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="all-orders-table">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="order-status" class="page-section">
+                <header>
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <div
+                            style="background: var(--primary-color); color: white; padding: 15px; border-radius: 12px; font-size: 1.5rem; display:flex; align-items:center; justify-content:center; box-shadow: 0 4px 10px rgba(108,92,231,0.3);">
+                            📊</div>
+                        <div>
+                            <h1 style="margin:0; font-size:1.8rem; color:#1e1e2d;">Order Status</h1>
+                            <p style="color:var(--text-muted); font-size:0.95rem; margin-top:5px;">Manage active and
+                                completed jobs</p>
+                        </div>
+                    </div>
+                </header>
+
+                <div class="table-container" style="margin-top: 30px;">
+                    <h3>⏳ Pending & Booked Orders</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Type</th>
+                                <th>Customer</th>
+                                <th>Description</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pending-orders-table">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="table-container" style="margin-top: 30px;">
+                    <h3>✅ Completed Orders</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Type</th>
+                                <th>Customer</th>
+                                <th>Description</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="completed-orders-table">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="notes" class="page-section">
+                <header>
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <div
+                            style="background: var(--primary-color); color: white; padding: 15px; border-radius: 12px; font-size: 1.5rem; display:flex; align-items:center; justify-content:center; box-shadow: 0 4px 10px rgba(108,92,231,0.3);">
+                            📝
+                        </div>
+                        <div>
+                            <h1 style="margin:0; font-size:1.8rem; color:#1e1e2d;">Notes & Reminders</h1>
+                            <p style="color:var(--text-muted); font-size:0.95rem; margin-top:5px;">Save custom
+                                descriptions and task reminders</p>
+                        </div>
+                    </div>
+                </header>
+
+                <div class="form-container" style="border-top: 4px solid var(--primary-color);">
+                    <h3 id="note-form-title">➕ Add New Note</h3>
+                    <form id="note-form">
+                        <input type="hidden" id="note-edit-id">
+                        <div class="input-group">
+                            <label>Note Title</label>
+                            <input type="text" id="note-title" placeholder="Enter note title" required>
+                        </div>
+                        <div class="input-group">
+                            <label>Note Description</label>
+                            <textarea id="note-desc" placeholder="Write your reminder or description here..."
+                                style="min-height: 80px;" required></textarea>
+                        </div>
+                        <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
+                            <button type="submit" class="btn"
+                                style="padding: 12px 30px; font-size: 1.1rem; border-radius: 8px;">Save Note</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="table-container"
+                    style="margin-top: 30px; background: transparent; box-shadow: none; padding: 0;">
+                    <h3 style="margin-bottom: 15px;">Saved Notes</h3>
+                    <div id="notes-container"
+                        style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+                        <!-- Dynamic notes will load here -->
+                    </div>
+                </div>
+            </section>
+
+            <section id="settings" class="page-section">
+                <header>
+                    <h1>System Settings</h1>
+                </header>
+
+                <div class="form-container max-w settings-account-card">
+                    <h3>🔐 Account Security</h3>
+                    <p style="margin-bottom: 20px; font-size: 0.9rem; color: #a0a5ba;">Update your Supabase Auth email or password. You must be logged in.</p>
+                    <form id="admin-settings-form">
+                        <div class="input-group">
+                            <label>New Email</label>
+                            <input type="email" id="settings-new-email" required placeholder="admin@yourstudio.com">
+                        </div>
+                        <div class="input-group">
+                            <label>New Password</label>
+                            <input type="password" id="settings-new-pass" required placeholder="Enter new password (min 6 characters)" minlength="6">
+                        </div>
+                        <button type="submit" class="btn btn-submit" style="margin-top: 20px;">🛡️ Update Account</button>
+                    </form>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- View Framing Modal -->
+    <div id="view-framing-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📋 Framing Order Details</h2>
+                <button type="button" class="close-btn" onclick="closeViewModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p><strong>Order ID:</strong> #<span id="v-order-id"></span></p>
+                <p><strong>Customer Name:</strong> <span id="v-name"></span></p>
+                <p><strong>Phone Number:</strong> <span id="v-phone"></span></p>
+                <p><strong>Description:</strong> <span id="v-desc"></span></p>
+                <p><strong>Delivery Date:</strong> <span id="v-date"></span></p>
+                <p><strong>Total Price:</strong> LKR <span id="v-price"></span></p>
+                <p><strong>Advance Paid:</strong> LKR <span id="v-advance"></span></p>
+                <p><strong>Remaining Balance:</strong> LKR <span id="v-balance"></span></p>
+                <p><strong>Status:</strong> <span id="v-status"></span></p>
+                <div id="vf-services-list" style="margin-top: 15px; border-top: 1px dashed #ccc; padding-top: 10px;">
+                </div>
+                <p><strong>Notes:</strong> <span id="v-notes"></span></p>
+            </div>
+            <div class="modal-footer">
+                <a id="v-whatsapp" href="#" target="_blank" class="btn btn-whatsapp">📱 Contact via WhatsApp</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Shoot Modal -->
+    <div id="view-shoot-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📸 Photo Shoot Booking Details</h2>
+                <button type="button" class="close-btn" onclick="closeShootViewModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p><strong>Booking ID:</strong> #<span id="vs-order-id"></span></p>
+                <p><strong>Customer Name:</strong> <span id="vs-name"></span></p>
+                <p><strong>Phone Number:</strong> <span id="vs-phone"></span></p>
+                <p><strong>Event Title:</strong> <span id="vs-event"></span></p>
+                <p><strong>Date:</strong> <span id="vs-date"></span></p>
+                <p><strong>Time:</strong> <span id="vs-time"></span></p>
+                <p><strong>Location:</strong> <span id="vs-location"></span></p>
+                <p><strong>Total Price:</strong> LKR <span id="vs-price"></span></p>
+                <p><strong>Advance Paid:</strong> LKR <span id="vs-advance"></span></p>
+                <p><strong>Remaining Balance:</strong> LKR <span id="vs-balance"></span></p>
+
+                <div id="vs-services-list" style="margin-top: 15px; border-top: 1px dashed #ccc; padding-top: 10px;">
+                </div>
+                <p><strong>Note 1:</strong> <span id="vs-note1"></span></p>
+                <p><strong>Note 2:</strong> <span id="vs-note2"></span></p>
+            </div>
+            <div class="modal-footer">
+                <a id="vs-whatsapp" href="#" target="_blank" class="btn btn-whatsapp">📱 Contact via WhatsApp</a>
+            </div>
+        </div>
+    </div>
+    <!-- View Editing Modal -->
+    <div id="view-editing-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🎨 Editing Order Details</h2>
+                <button type="button" class="close-btn" onclick="closeEditingViewModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p><strong>Order ID:</strong> #<span id="ve-order-id"></span></p>
+                <p><strong>Customer Name:</strong> <span id="ve-name"></span></p>
+                <p><strong>Phone Number:</strong> <span id="ve-phone"></span></p>
+                <p><strong>Title:</strong> <span id="ve-title"></span></p>
+                <p><strong>Delivery Date:</strong> <span id="ve-date"></span></p>
+                <p><strong>Total Price:</strong> LKR <span id="ve-price"></span></p>
+                <p><strong>Advance Paid:</strong> LKR <span id="ve-advance"></span></p>
+                <p><strong>Remaining Balance:</strong> LKR <span id="ve-balance"></span></p>
+                <p><strong>Status:</strong> <span id="ve-status"></span></p>
+                <div id="ve-services-list" style="margin-top: 15px; border-top: 1px dashed #ccc; padding-top: 10px;">
+                </div>
+                <p><strong>Note 1:</strong> <span id="ve-note1"></span></p>
+                <p><strong>Note 2:</strong> <span id="ve-note2"></span></p>
+            </div>
+            <div class="modal-footer">
+                <a id="ve-whatsapp" href="#" target="_blank" class="btn btn-whatsapp">📱 Contact via WhatsApp</a>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- View Booking Modal -->
+    <div id="view-booking-modal" class="modal-overlay" style="font-family: 'Outfit', sans-serif;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 style="font-family: 'Outfit', sans-serif;">📅 Booking Details</h2>
+                <button type="button" class="close-btn" onclick="closeBookingViewModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p><strong>Booking ID:</strong> #<span id="vb-order-id"></span></p>
+                <p><strong>Customer Name:</strong> <span id="vb-name"></span></p>
+                <p><strong>Phone Number:</strong> <span id="vb-phone"></span></p>
+                <p><strong>Event Title:</strong> <span id="vb-event"></span></p>
+                <p><strong>Date:</strong> <span id="vb-date"></span></p>
+                <p><strong>Total Price:</strong> LKR <span id="vb-price"></span></p>
+
+                <div id="vb-services-list" style="margin-top: 15px; border-top: 1px dashed #ccc; padding-top: 10px;">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <a id="vb-whatsapp" href="#" target="_blank" class="btn btn-whatsapp" style="font-family: 'Outfit', sans-serif;">📱 Contact via WhatsApp</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Unsettled Order Modal -->
+    <div id="view-unsettled-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>⚠️ Unsettled Order Details</h2>
+                <button type="button" class="close-btn" onclick="closeUnsettledViewModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p><strong>Order ID:</strong> #<span id="vuo-order-id"></span></p>
+                <p><strong>Customer Name:</strong> <span id="vuo-name"></span></p>
+                <p><strong>Phone Number:</strong> <span id="vuo-phone"></span></p>
+                <p><strong>Title:</strong> <span id="vuo-title"></span></p>
+                <p><strong>Date:</strong> <span id="vuo-date"></span></p>
+                <div id="vuo-services-list" style="margin-top: 15px; border-top: 1px dashed #ccc; padding-top: 10px;"></div>
+                <p><strong>Total Price:</strong> LKR <span id="vuo-price"></span></p>
+                <p><strong>Advance Paid:</strong> LKR <span id="vuo-advance"></span></p>
+                <p><strong>Balance:</strong> LKR <span id="vuo-balance"></span></p>
+            </div>
+            <div class="modal-footer">
+                <a id="vuo-whatsapp" href="#" target="_blank" class="btn btn-whatsapp">📱 Contact via WhatsApp</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
