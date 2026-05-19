@@ -6,8 +6,9 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const { createClient } = require('@supabase/supabase-js');
 
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+const supabaseUrl      = process.env.SUPABASE_URL;
+const supabaseAnonKey  = process.env.SUPABASE_ANON_KEY;
+const supabaseRoleKey  = process.env.SUPABASE_SERVICE_ROLE_KEY || supabaseAnonKey;
 
 const DEFAULT_ALLOWED_ORIGINS = [
     'http://localhost:3000',
@@ -22,16 +23,29 @@ const allowedOrigins = (process.env.ALLOWED_ORIGINS || process.env.FRONTEND_URL 
     .filter(Boolean)
     .concat(DEFAULT_ALLOWED_ORIGINS);
 
-let supabase;
+// Two clients:
+// - supabaseAdmin: uses service role key → bypasses RLS for all data operations
+// - supabaseAuth:  uses anon key → used only to verify user login tokens
+let supabaseAdmin;
+let supabaseAuth;
 
 function getSupabase() {
-    if (!supabase) {
+    if (!supabaseAdmin) {
         if (!supabaseUrl || !supabaseAnonKey) {
             throw new Error('Supabase credentials missing. Set SUPABASE_URL and SUPABASE_ANON_KEY.');
         }
-        supabase = createClient(supabaseUrl, supabaseAnonKey);
+        supabaseAdmin = createClient(supabaseUrl, supabaseRoleKey, {
+            auth: { persistSession: false }
+        });
     }
-    return supabase;
+    return supabaseAdmin;
+}
+
+function getAuthClient() {
+    if (!supabaseAuth) {
+        supabaseAuth = createClient(supabaseUrl, supabaseAnonKey);
+    }
+    return supabaseAuth;
 }
 
 const app = express();
@@ -74,7 +88,7 @@ async function requireAuth(req, res, next) {
             return res.status(401).json({ message: 'Unauthorized: empty token' });
         }
 
-        const { data, error } = await getSupabase().auth.getUser(token);
+        const { data, error } = await getAuthClient().auth.getUser(token);
         if (error || !data.user) {
             return res.status(401).json({ message: 'Unauthorized: invalid or expired token' });
         }
